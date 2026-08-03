@@ -1,0 +1,20 @@
+domain: yashgoyal.dev
+layout:
+- go.kubebuilder.io/v4
+projectName: kubebuilder-admission-poc
+repo: github.com/yashgoyal0110/kubebuilder-admission-poc
+resources:
+- api:
+    crdVersion: v1
+    namespaced: true
+  controller: true
+  domain: yashgoyal.dev
+  group: devices
+  kind: Device
+  path: github.com/yashgoyal0110/kubebuilder-admission-poc/api/v1alpha1
+  version: v1alpha1
+  webhooks:
+    defaulting: true
+    validation: true
+    webhookVersion: v1
+version: "3"

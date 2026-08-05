@@ -14,7 +14,7 @@ ENVTEST        ?= $(LOCALBIN)/setup-envtest
 GOVULNCHECK    ?= $(LOCALBIN)/govulncheck
 
 .PHONY: all
-all: generate manifests fmt vet test
+all: verify-go-version generate manifests fmt vet test
 
 $(LOCALBIN):
 	mkdir -p $(LOCALBIN)
@@ -39,6 +39,10 @@ manifests: $(CONTROLLER_GEN) ## CRDs, RBAC and webhook configuration, all from m
 		output:crd:artifacts:config=config/crd \
 		output:rbac:artifacts:config=config/rbac \
 		output:webhook:artifacts:config=config/webhook
+
+.PHONY: verify-go-version
+verify-go-version:
+	./hack/verify-go-version.sh
 
 .PHONY: fmt
 fmt:

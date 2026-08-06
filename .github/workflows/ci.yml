@@ -30,6 +30,18 @@ jobs:
       # Fails if CRDs, RBAC or webhook manifests don't match the markers they came from.
       - run: make verify
 
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+          cache: true
+      - uses: golangci/golangci-lint-action@v7
+        with:
+          version: v2.0
+
   vulncheck:
     runs-on: ubuntu-latest
     steps:

@@ -2,6 +2,7 @@ package v1alpha1
 
 import (
 	"context"
+	"fmt"
 	"strings"
 	"testing"
 
@@ -114,5 +115,42 @@ func TestSchemaRejectsAnUnknownProtocol(t *testing.T) {
 	if err := k8sClient.Create(ctx, d); err == nil {
 		t.Cleanup(func() { _ = k8sClient.Delete(ctx, d) })
 		t.Fatal("expected the CRD schema to reject an unsupported protocol")
+	}
+}
+
+func TestEndpointSchemeMustMatchProtocol(t *testing.T) {
+	cases := []struct {
+		name     string
+		protocol devicesv1alpha1.Protocol
+		endpoint string
+		wantOK   bool
+	}{
+		{"mqtt over tcp", devicesv1alpha1.ProtocolMQTT, "tcp://10.0.0.1:1883", true},
+		{"mqtt over ssl", devicesv1alpha1.ProtocolMQTT, "ssl://10.0.0.1:8883", true},
+		{"opcua endpoint", devicesv1alpha1.ProtocolOPCUA, "opc.tcp://10.0.0.1:4840", true},
+		{"bluetooth endpoint", devicesv1alpha1.ProtocolBluetooth, "ble://AA-BB-CC-DD", true},
+		// The one that matters: a perfectly valid URL for the wrong protocol.
+		{"opcua pointed at mqtt", devicesv1alpha1.ProtocolOPCUA, "tcp://10.0.0.1:1883", false},
+		{"mqtt pointed at opcua", devicesv1alpha1.ProtocolMQTT, "opc.tcp://10.0.0.1:4840", false},
+	}
+
+	ctx := context.Background()
+	for i, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			d := device(fmt.Sprintf("scheme-case-%d", i))
+			d.Spec.Protocol = tc.protocol
+			d.Spec.Endpoint = tc.endpoint
+
+			err := k8sClient.Create(ctx, d)
+			if err == nil {
+				t.Cleanup(func() { _ = k8sClient.Delete(ctx, d) })
+			}
+			if tc.wantOK && err != nil {
+				t.Fatalf("expected %s to be accepted: %v", tc.endpoint, err)
+			}
+			if !tc.wantOK && err == nil {
+				t.Fatalf("expected %s to be rejected for protocol %s", tc.endpoint, tc.protocol)
+			}
+		})
 	}
 }

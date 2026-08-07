@@ -9,7 +9,6 @@ package v1alpha1
 import (
 	"context"
 	"fmt"
-	"net/url"
 
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/util/validation/field"
@@ -101,17 +100,4 @@ func (v *DeviceCustomValidator) ValidateUpdate(_ context.Context, oldObj, newObj
 
 func (v *DeviceCustomValidator) ValidateDelete(_ context.Context, _ runtime.Object) (admission.Warnings, error) {
 	return nil, nil
-}
-
-func validateSpec(device *devicesv1alpha1.Device) field.ErrorList {
-	var errs field.ErrorList
-	specPath := field.NewPath("spec")
-
-	parsed, err := url.Parse(device.Spec.Endpoint)
-	if err != nil || parsed.Scheme == "" || parsed.Host == "" {
-		errs = append(errs, field.Invalid(specPath.Child("endpoint"), device.Spec.Endpoint,
-			"must be an absolute URL with a scheme and a host"))
-	}
-
-	return errs
 }

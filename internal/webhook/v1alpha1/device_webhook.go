@@ -71,7 +71,7 @@ func (v *DeviceCustomValidator) ValidateCreate(_ context.Context, obj runtime.Ob
 	if !ok {
 		return nil, fmt.Errorf("expected a Device, got %T", obj)
 	}
-	return nil, validateSpec(device).ToAggregate()
+	return warningsFor(device), validateSpec(device).ToAggregate()
 }
 
 func (v *DeviceCustomValidator) ValidateUpdate(_ context.Context, oldObj, newObj runtime.Object) (admission.Warnings, error) {
@@ -95,7 +95,33 @@ func (v *DeviceCustomValidator) ValidateUpdate(_ context.Context, oldObj, newObj
 			fmt.Sprintf("field is immutable, was %q", oldDevice.Spec.Model)))
 	}
 
-	return nil, errs.ToAggregate()
+	// Moving a device to another node is only meaningful if it was allowed to move in the first
+	// place. Rejecting the edit is better than accepting it and having the old node keep the
+	// device while the spec claims otherwise.
+	if oldDevice.Spec.NodeName != newDevice.Spec.NodeName && !offlineMigrationEnabled(oldDevice) {
+		errs = append(errs, field.Forbidden(
+			field.NewPath("spec", "nodeName"),
+			"device cannot be moved to another node unless spec.offlineMigration is true"))
+	}
+
+	return warningsFor(newDevice), errs.ToAggregate()
+}
+
+func offlineMigrationEnabled(device *devicesv1alpha1.Device) bool {
+	return device.Spec.OfflineMigration != nil && *device.Spec.OfflineMigration
+}
+
+// warningsFor returns advice that should not block the write. A warning shows up in kubectl
+// without failing anything, which is the right severity for "this is legal but you probably
+// didn't mean it".
+func warningsFor(device *devicesv1alpha1.Device) admission.Warnings {
+	var warnings admission.Warnings
+	if device.Spec.OfflineMigration != nil && !*device.Spec.OfflineMigration {
+		warnings = append(warnings,
+			"spec.offlineMigration is false: this device will stay bound to "+
+				device.Spec.NodeName+" even if that node goes offline")
+	}
+	return warnings
 }
 
 func (v *DeviceCustomValidator) ValidateDelete(_ context.Context, _ runtime.Object) (admission.Warnings, error) {

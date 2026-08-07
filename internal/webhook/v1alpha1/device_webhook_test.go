@@ -154,3 +154,50 @@ func TestEndpointSchemeMustMatchProtocol(t *testing.T) {
 		})
 	}
 }
+
+func TestNodeChangeNeedsOfflineMigration(t *testing.T) {
+	ctx := context.Background()
+	pinned := false
+
+	d := device("pinned-device")
+	d.Spec.OfflineMigration = &pinned
+	if err := k8sClient.Create(ctx, d); err != nil {
+		t.Fatalf("create failed: %v", err)
+	}
+	t.Cleanup(func() { _ = k8sClient.Delete(ctx, d) })
+
+	var got devicesv1alpha1.Device
+	if err := k8sClient.Get(ctx, client.ObjectKeyFromObject(d), &got); err != nil {
+		t.Fatalf("get failed: %v", err)
+	}
+
+	got.Spec.NodeName = "edge-node-2"
+	err := k8sClient.Update(ctx, &got)
+	if err == nil {
+		t.Fatal("expected a pinned device to refuse a node change")
+	}
+	if !strings.Contains(err.Error(), "offlineMigration") {
+		t.Fatalf("rejected for the wrong reason: %v", err)
+	}
+}
+
+func TestMigratableDeviceCanChangeNode(t *testing.T) {
+	ctx := context.Background()
+
+	// offlineMigration defaults to true, so this device is allowed to move.
+	d := device("migratable-device")
+	if err := k8sClient.Create(ctx, d); err != nil {
+		t.Fatalf("create failed: %v", err)
+	}
+	t.Cleanup(func() { _ = k8sClient.Delete(ctx, d) })
+
+	var got devicesv1alpha1.Device
+	if err := k8sClient.Get(ctx, client.ObjectKeyFromObject(d), &got); err != nil {
+		t.Fatalf("get failed: %v", err)
+	}
+
+	got.Spec.NodeName = "edge-node-2"
+	if err := k8sClient.Update(ctx, &got); err != nil {
+		t.Fatalf("a migratable device should be allowed to move: %v", err)
+	}
+}

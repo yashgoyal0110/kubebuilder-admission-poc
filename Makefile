@@ -73,6 +73,10 @@ verify: generate manifests ## fail if generated files are stale
 		exit 1; \
 	fi
 
+.PHONY: demo
+demo: ## stand it up on a throwaway kind cluster and exercise admission for real
+	./hack/kind-demo.sh
+
 .PHONY: clean
 clean:
 	rm -rf $(LOCALBIN) cover.out

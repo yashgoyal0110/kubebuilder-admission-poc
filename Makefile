@@ -13,8 +13,13 @@ CONTROLLER_GEN ?= $(LOCALBIN)/controller-gen
 ENVTEST        ?= $(LOCALBIN)/setup-envtest
 GOVULNCHECK    ?= $(LOCALBIN)/govulncheck
 
+.PHONY: help
+help: ## list targets
+	@grep -hE '^[a-z-]+:.*?## ' $(MAKEFILE_LIST) | sort | \
+		awk 'BEGIN {FS = ":.*?## "}; {printf "  \033[36m%-20s\033[0m %s\n", $$1, $$2}'
+
 .PHONY: all
-all: verify-go-version generate manifests fmt vet test
+all: verify-go-version generate manifests fmt vet test ## everything CI runs
 
 $(LOCALBIN):
 	mkdir -p $(LOCALBIN)
@@ -29,7 +34,7 @@ $(GOVULNCHECK): $(LOCALBIN)
 	GOBIN=$(LOCALBIN) go install golang.org/x/vuln/cmd/govulncheck@$(GOVULNCHECK_VERSION)
 
 .PHONY: generate
-generate: $(CONTROLLER_GEN) ## DeepCopy methods
+generate: $(CONTROLLER_GEN) ## deepcopy methods
 	$(CONTROLLER_GEN) object:headerFile="hack/boilerplate.go.txt" paths="./api/..."
 
 .PHONY: manifests
@@ -41,7 +46,7 @@ manifests: $(CONTROLLER_GEN) ## CRDs, RBAC and webhook configuration, all from m
 		output:webhook:artifacts:config=config/webhook
 
 .PHONY: verify-go-version
-verify-go-version:
+verify-go-version: ## fail if Go is pinned to different versions in different files
 	./hack/verify-go-version.sh
 
 .PHONY: fmt
@@ -53,16 +58,16 @@ vet:
 	go vet ./...
 
 .PHONY: test
-test: $(ENVTEST)
+test: $(ENVTEST) ## unit and envtest suites
 	KUBEBUILDER_ASSETS="$(shell $(ENVTEST) use $(ENVTEST_K8S_VERSION) --bin-dir $(LOCALBIN) -p path)" \
 		go test ./... -coverprofile cover.out
 
 .PHONY: vulncheck
-vulncheck: $(GOVULNCHECK)
+vulncheck: $(GOVULNCHECK) ## scan for reachable advisories
 	$(GOVULNCHECK) ./...
 
 .PHONY: build
-build:
+build: ## compile the manager
 	go build -o $(LOCALBIN)/manager ./cmd
 
 .PHONY: verify

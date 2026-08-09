@@ -8,6 +8,7 @@ CONTROLLER_TOOLS_VERSION ?= v0.17.3
 ENVTEST_VERSION          ?= release-0.20
 ENVTEST_K8S_VERSION      ?= 1.32.0
 GOVULNCHECK_VERSION      ?= latest
+IMG                      ?= controller:latest
 
 CONTROLLER_GEN ?= $(LOCALBIN)/controller-gen
 ENVTEST        ?= $(LOCALBIN)/setup-envtest
@@ -69,6 +70,10 @@ vulncheck: $(GOVULNCHECK) ## scan for reachable advisories
 .PHONY: build
 build: ## compile the manager
 	go build -o $(LOCALBIN)/manager ./cmd
+
+.PHONY: image
+image: ## build the container image for both architectures
+	docker buildx build --platform linux/amd64,linux/arm64 -t $(IMG) .
 
 .PHONY: verify
 verify: generate manifests ## fail if generated files are stale

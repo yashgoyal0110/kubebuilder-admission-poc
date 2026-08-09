@@ -8,7 +8,8 @@ set -euo pipefail
 
 cd "$(dirname "${BASH_SOURCE[0]}")/.."
 
-expected="$(tr -d '[:space:]' < .go-version)"
+# go.mod is the source of truth. Everything else has to agree with it.
+expected="$(awk '/^go /{print $2; exit}' go.mod)"
 status=0
 
 check() {
@@ -24,9 +25,9 @@ check() {
   fi
 }
 
-echo "expecting Go ${expected} (from .go-version)"
+echo "expecting Go ${expected} (from go.mod)"
 
-check "go.mod" "$(awk '/^go /{print $2; exit}' go.mod)"
+check ".go-version" "$(tr -d '[:space:]' < .go-version)"
 check "Dockerfile" "$(sed -n 's/^FROM.*golang:\([0-9.]*\).*/\1/p' Dockerfile | head -1)"
 
 # CI deliberately has no version of its own to check. The workflow uses

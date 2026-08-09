@@ -57,7 +57,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: docker/setup-qemu-action@v3
-      - uses: docker/setup-buildx-action@v3
+      - uses: docker/setup-buildx-action@v4
       # Built for both architectures but not pushed. Edge deployments are frequently arm64 and a
       # build that only ever runs on amd64 breaks the first time someone tries it on a Pi.
       - uses: docker/build-push-action@v6

@@ -1,0 +1,28 @@
+# govulncheck tells you when a dependency is dangerous. It does not raise the PR. Without
+# something opening those, the scan just fails CI every day until a human notices.
+version: 2
+updates:
+  - package-ecosystem: gomod
+    directory: /
+    schedule:
+      interval: weekly
+    groups:
+      # Kubernetes libraries move together. Bumping k8s.io/api on its own against an unchanged
+      # controller-runtime is how you end up a minor out of step.
+      kubernetes:
+        patterns:
+          - "k8s.io/*"
+          - "sigs.k8s.io/controller-runtime"
+      golang-x:
+        patterns:
+          - "golang.org/x/*"
+
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: monthly
+
+  - package-ecosystem: docker
+    directory: /
+    schedule:
+      interval: weekly

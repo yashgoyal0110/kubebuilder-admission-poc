@@ -94,6 +94,8 @@ func startManager(t *testing.T) {
 	}
 }
 
+// newDevice builds a Device that passes validation. The webhooks are not installed in this
+// suite, so these tests exercise reconciliation on its own.
 func newDevice(name string) *devicesv1alpha1.Device {
 	return &devicesv1alpha1.Device{
 		ObjectMeta: metav1.ObjectMeta{Name: name, Namespace: "default"},

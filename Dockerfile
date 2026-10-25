@@ -1,5 +1,5 @@
 # Must match the go directive in go.mod. hack/verify-go-version.sh enforces that in CI.
-FROM --platform=$BUILDPLATFORM golang:1.25.12 AS builder
+FROM --platform=$BUILDPLATFORM golang:1.27.3 AS builder
 
 ARG TARGETOS
 ARG TARGETARCH
